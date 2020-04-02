@@ -15,9 +15,10 @@ class CreateOrdersTable extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('customer_name', 80);
-            $table->string('customer_email', 120);
-            $table->string('customer_mobile', 40);
+            $table->string('reference', 80);
+            $table->decimal("total", 19,2);
+            $table->unsignedBigInteger('user_id')->index();
+            $table->foreign('user_id')->references('id')->on('users');
             $table->enum('status', ["CREATED", "PAYED", "REJECTED"])->default("CREATED");
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent();
