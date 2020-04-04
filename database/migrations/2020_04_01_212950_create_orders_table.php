@@ -19,7 +19,8 @@ class CreateOrdersTable extends Migration
             $table->decimal("total", 19,2);
             $table->unsignedBigInteger('user_id')->index();
             $table->foreign('user_id')->references('id')->on('users');
-            $table->enum('status', ["CREATED", "PAYED", "REJECTED"])->default("CREATED");
+            $table->enum('status', ["CREATED", "PENDING", "PAYED", "REJECTED", "EXPIRED"])
+                ->default("CREATED");
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent();
         });

@@ -8,11 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
+    const PAYED = 'PAYED';
+    const PENDING = 'PENDING';
+    const REJECTED = 'REJECTED';
+
     protected $fillable = [
         'reference',
         'total',
         'user_id',
-        'status'
+        'request_id',
+        'status',
+        'expiration_date'
     ];
 
     public function items()

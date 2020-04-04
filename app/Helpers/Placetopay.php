@@ -17,7 +17,8 @@ class Placetopay {
         ]);
     }
 
-    public function request($amount, $reference) {
+    public function request($amount, $reference, $expiration)
+    {
         $request = [
             'payment' => [
                 'reference' => $reference,
@@ -27,15 +28,18 @@ class Placetopay {
                     'total' => $amount,
                 ],
             ],
-            'expiration' => date('c', strtotime('+1 hour')),
+            'expiration' => $expiration,
             'returnUrl' => 'http://127.0.0.1:8000/orders/response/' . $reference,
             'ipAddress' => '127.0.0.1',
             'userAgent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36',
         ];
 
-        $response = $this->placetopay->request($request);
-        return $response;
+        return $this->placetopay->request($request);
+    }
 
+    public function query($request_id)
+    {
+        return $this->placetopay->query($request_id);
     }
 
 }
