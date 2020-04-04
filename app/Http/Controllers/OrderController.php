@@ -131,11 +131,16 @@ class OrderController extends Controller
         $order = Order::where(['id' => $request->id, 'user_id' => Auth::id()])->first();
 
         $placetopay = new Placetopay();
-        $response = $placetopay->request($order->total, $order->reference);
+        $expiration = date('c', strtotime('+1 hour'));
+        $response = $placetopay->request($order->total, $order->reference, $expiration);
         if ($response->isSuccessful()) {
+            $order->update([
+               'request_id' => $response->requestId(),
+                'expiration_date' => date("Y-m-d H:i:s", strtotime($expiration))
+            ]);
             return Redirect::to($response->processUrl());
         } else {
-            $response->status()->message();
+            Log::error($response->status()->message());
         }
     }
 
@@ -147,6 +152,27 @@ class OrderController extends Controller
      */
     public function response($reference)
     {
-        return view('response', ['reference' => $reference]);
+        $order = Order::where('reference', $reference)->first();
+        $placetopay = new Placetopay();
+        $response = $placetopay->query($order->request_id);
+        if ($response->isSuccessful()) {
+            if ($response->status()->isApproved()) {
+                $order->update([
+                   'status' => Order::PAYED
+                ]);
+            } elseif (in_array($response->status()->status(), [Order::PENDING, Order::REJECTED])) {
+                $order->update([
+                    'status' => $response->status()->status()
+                ]);
+            }
+        }
+        $payment = $response->payment;
+        $transaction = [
+            'status' => $payment[0]->status()->message(),
+            'date' => $payment[0]->status()->date(),
+            'method' => $payment[0]->paymentMethodName()
+        ];
+
+        return view('response', ['order' => $order, 'transaction' => $transaction]);
     }
 }
