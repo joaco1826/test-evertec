@@ -7,9 +7,22 @@ use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redirect;
+use App\Helpers\Placetopay;
 
 class OrderController extends Controller
 {
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -107,5 +120,33 @@ class OrderController extends Controller
     public function destroy($id)
     {
         //
+    }
+
+    public function pay(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer'
+        ]);
+
+        $order = Order::where(['id' => $request->id, 'user_id' => Auth::id()])->first();
+
+        $placetopay = new Placetopay();
+        $response = $placetopay->request($order->total, $order->reference);
+        if ($response->isSuccessful()) {
+            return Redirect::to($response->processUrl());
+        } else {
+            $response->status()->message();
+        }
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  string  $reference
+     * @return \Illuminate\Http\Response
+     */
+    public function response($reference)
+    {
+        return view('response', ['reference' => $reference]);
     }
 }
