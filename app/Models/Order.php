@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
+    const CREATED = 'CREATED';
     const PAYED = 'PAYED';
     const PENDING = 'PENDING';
     const REJECTED = 'REJECTED';

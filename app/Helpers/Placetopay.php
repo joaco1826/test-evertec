@@ -46,7 +46,7 @@ class Placetopay {
 
     public function getInformationPayments()
     {
-        $orders = Order::where('status', Order::PENDING)->get();
+        $orders = Order::whereIn('status', [Order::PENDING, Order::CREATED])->get();
         foreach ($orders as $order) {
             if (strtotime(date("Y-m-d H:i:s")) > strtotime($order->expiration_date)) {
                 $order->update([
@@ -64,9 +64,9 @@ class Placetopay {
                         $order->update([
                             'status' => Order::REJECTED
                         ]);
-                    } elseif (in_array($response->status()->status(), [Order::PENDING, Order::REJECTED])) {
+                    } elseif ($response->status()->status() === Order::PENDING) {
                         $order->update([
-                            'status' => $response->status()->status()
+                            'status' => Order::PENDING
                         ]);
                     }
 

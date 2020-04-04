@@ -18,6 +18,7 @@ use Faker\Generator as Faker;
 
 $factory->define(User::class, function (Faker $faker) {
     return [
+        'is_admin' => true,
         'name' => $faker->name,
         'email' => 'test@evertec.com',
         'cellphone' => $faker->numberBetween(),
