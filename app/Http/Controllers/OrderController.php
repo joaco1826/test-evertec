@@ -26,11 +26,14 @@ class OrderController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function index()
     {
-        //
+        return view('orders.index', [
+            'orders' => Order::where('user_id', Auth::id())->orderByDesc('created_at')->get()
+            ]
+        );
     }
 
     /**
@@ -47,7 +50,7 @@ class OrderController extends Controller
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
@@ -81,11 +84,11 @@ class OrderController extends Controller
      * Display the specified resource.
      *
      * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function show($id)
     {
-        return view('order', ['order' => Order::with('items')->find($id)]);
+        return view('orders.show', ['order' => Order::with('items')->find($id)]);
     }
 
     /**
@@ -135,7 +138,8 @@ class OrderController extends Controller
         $response = $placetopay->request($order->total, $order->reference, $expiration);
         if ($response->isSuccessful()) {
             $order->update([
-               'request_id' => $response->requestId(),
+                'request_id' => $response->requestId(),
+                'process_url' => $response->processUrl(),
                 'expiration_date' => date("Y-m-d H:i:s", strtotime($expiration))
             ]);
             return Redirect::to($response->processUrl());
@@ -148,7 +152,7 @@ class OrderController extends Controller
      * Display the specified resource.
      *
      * @param  string  $reference
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function response($reference)
     {
@@ -160,19 +164,36 @@ class OrderController extends Controller
                 $order->update([
                    'status' => Order::PAYED
                 ]);
+                $payment = $response->payment;
+                $transaction = [
+                    'status' => $payment[0]->status()->message(),
+                    'date' => $payment[0]->status()->date(),
+                    'method' => $payment[0]->paymentMethodName()
+                ];
+            } elseif ($response->status()->isRejected()) {
+                $order->update([
+                    'status' => Order::REJECTED
+                ]);
+                $transaction = [
+                    'status' => $response->status()->message(),
+                    'date' => $response->status()->date(),
+                    'method' => ''
+                ];
             } elseif (in_array($response->status()->status(), [Order::PENDING, Order::REJECTED])) {
                 $order->update([
                     'status' => $response->status()->status()
                 ]);
+                $payment = $response->payment;
+                $transaction = [
+                    'status' => $payment[0]->status()->message(),
+                    'date' => $payment[0]->status()->date(),
+                    'method' => $payment[0]->paymentMethodName()
+                ];
             }
-        }
-        $payment = $response->payment;
-        $transaction = [
-            'status' => $payment[0]->status()->message(),
-            'date' => $payment[0]->status()->date(),
-            'method' => $payment[0]->paymentMethodName()
-        ];
 
-        return view('response', ['order' => $order, 'transaction' => $transaction]);
+        }
+
+
+        return view('orders.response', ['order' => $order, 'transaction' => $transaction]);
     }
 }

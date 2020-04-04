@@ -11,6 +11,7 @@ class Order extends Model
     const PAYED = 'PAYED';
     const PENDING = 'PENDING';
     const REJECTED = 'REJECTED';
+    const EXPIRED = 'EXPIRED';
 
     protected $fillable = [
         'reference',
@@ -18,6 +19,7 @@ class Order extends Model
         'user_id',
         'request_id',
         'status',
+        'process_url',
         'expiration_date'
     ];
 
