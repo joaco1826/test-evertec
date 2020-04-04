@@ -30,8 +30,13 @@ class OrderController extends Controller
      */
     public function index()
     {
+        if (Auth::user()->is_admin) {
+            $orders = Order::orderByDesc('created_at')->get();
+        } else {
+            $orders = Order::where('user_id', Auth::id())->orderByDesc('created_at')->get();
+        }
         return view('orders.index', [
-            'orders' => Order::where('user_id', Auth::id())->orderByDesc('created_at')->get()
+            'orders' => $orders
             ]
         );
     }
@@ -160,39 +165,35 @@ class OrderController extends Controller
         $placetopay = new Placetopay();
         $response = $placetopay->query($order->request_id);
         if ($response->isSuccessful()) {
+            $transaction = [
+                'status' => $response->status()->message(),
+                'date' => $response->status()->date(),
+                'method' => 'Desconocido'
+            ];
             if ($response->status()->isApproved()) {
                 $order->update([
                    'status' => Order::PAYED
                 ]);
-                $payment = $response->payment;
-                $transaction = [
-                    'status' => $payment[0]->status()->message(),
-                    'date' => $payment[0]->status()->date(),
-                    'method' => $payment[0]->paymentMethodName()
-                ];
+                $transaction['method'] = $response->payment[0]->paymentMethodName();
             } elseif ($response->status()->isRejected()) {
                 $order->update([
                     'status' => Order::REJECTED
                 ]);
-                $transaction = [
-                    'status' => $response->status()->message(),
-                    'date' => $response->status()->date(),
-                    'method' => ''
-                ];
-            } elseif (in_array($response->status()->status(), [Order::PENDING, Order::REJECTED])) {
+                $transaction['method'] = '';
+            } elseif ($response->status()->status() === Order::PENDING) {
                 $order->update([
                     'status' => $response->status()->status()
                 ]);
-                $payment = $response->payment;
-                $transaction = [
-                    'status' => $payment[0]->status()->message(),
-                    'date' => $payment[0]->status()->date(),
-                    'method' => $payment[0]->paymentMethodName()
-                ];
             }
 
+        } else {
+            $transaction = [
+                'status' => 'Error',
+                'date' => date('Y-m-d H:i:s'),
+                'method' => ''
+            ];
+            Log::error("Ha ocurrido un error " . $response->status()->message());
         }
-
 
         return view('orders.response', ['order' => $order, 'transaction' => $transaction]);
     }
