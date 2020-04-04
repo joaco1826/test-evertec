@@ -43,3 +43,13 @@ php artisan migrate --seed
 ```
 ./vendor/bin/phpunit
 ```
+
+7. Agregar cron al servidor para la tarea programada de actualizar los estados de las ordenes (en este caso es para ejecutar la tarea cada minuno, puede editar el cron según su preferencia)
+```
+* * * * * php /ruta-al-proyecto/artisan schedule:run >> /dev/null 2>&1
+```
+
+8. Para el uso local del cron correr el siguiente comando:
+```
+php artisan schedule:run
+```
